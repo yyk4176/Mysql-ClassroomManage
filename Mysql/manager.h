@@ -9,35 +9,105 @@
 void printResult(MYSQL_RES* res, int rownum);
 class Manager {
 public:
-	static void MADD(MYSQL mysql, std::string table) {
-		MYSQL_RES* res = nullptr;
-		MYSQL_FIELD* field = nullptr;
-		std::string input;
-		std::string sql = "insert into ";
-		sql += table;
-		sql += " values(";
-		std::string sqltemp = "select * from ";
-		sqltemp += table;
-		mysql_query(&mysql, "set names GBK");
-		mysql_query(&mysql, sqltemp.c_str());
-		res = mysql_store_result(&mysql);
-		field = mysql_fetch_field(res);
-		std::cout << "请输入" << field->name << "：";
-		field = mysql_fetch_field(res);
-		std::cin >> input;
-		sql += "'";
-		sql += input;
-		sql += "'";
-		while (field != nullptr){
-			std::cout << "请输入" << field->name << "：";
-			field = mysql_fetch_field(res);
-			std::cin >> input;
-			sql += ",'";
-			sql += input;
-			sql += "'";
+	static TableEntity* getEntity() {
+		std::string table;
+		std::cout<< "请输入表名：";
+		std::cin >> table;
+		std::string temp[5];
+		if (table == "teacher")
+		{
+			std::cout<<"请输入教师ID：";
+			std::cin >> temp[0];
+			std::cout << "请输入教师姓名：";
+			std::cin >> temp[1];
+			std::cout << "请输入教师职称：";
+			std::cin >> temp[2];
+			TeacherRow* tr=new TeacherRow(atoi(temp[0].c_str()), temp[1], temp[2]);
+			return tr;
 		}
-		sql += ")";
-		//std::cout << sql;
+		else if (table == "course")
+		{
+			std::cout << "请输入课程ID：";
+			std::cin >> temp[0];
+			std::cout << "请输入课程名称：";
+			std::cin >> temp[1];
+			std::cout << "请输入课程容量：";
+			std::cin >> temp[2];
+			std::cout << "请输入教师ID：";
+			std::cin >> temp[3];
+			CourseRow* cr = new CourseRow(atoi(temp[0].c_str()), temp[1], atoi(temp[2].c_str()), atoi(temp[3].c_str()));
+			return cr;
+		}
+		else if (table == "classroom")
+		{
+			std::cout << "请输入教室ID：";
+			std::cin >> temp[0];
+			std::cout << "请输入教室容量：";
+			std::cin >> temp[1];
+			std::cout << "请输入教室类型：";
+			std::cin >> temp[2];
+			ClassroomRow* clr = new ClassroomRow(atoi(temp[0].c_str()), atoi(temp[1].c_str()), temp[2]);
+			return clr;
+		}
+		else if (table == "schedule")
+		{
+			std::cout << "无法手动添加课程安排信息" << std::endl;
+			return nullptr;
+		}
+		else
+		{
+			std::cout<<"表名错误"<<std::endl;
+			return nullptr;
+		}
+	}
+	static void MADD(MYSQL mysql) {
+		std::string sql = "insert into ";
+		std::string tablename;
+
+		TableEntity* tbe = getEntity();
+		tablename = tbe->TableName;
+
+		sql += tbe->TableName;
+		sql += " values";
+		mysql_query(&mysql, "set names GBK");
+		if (tbe->TableName == "teacher")
+		{
+			sql += "('";
+			sql+= std::to_string(((TeacherRow*)tbe)->TeacherID);
+			sql += "','";
+			sql += ((TeacherRow*)tbe)->Name;
+			sql += "','";
+			sql += ((TeacherRow*)tbe)->Title;
+			sql += "')";
+		}
+		else if(tbe->TableName == "course")
+		{
+			sql += "(";
+			sql += std::to_string(((CourseRow*)tbe)->CourseID);
+			sql += ",'";
+			sql += ((CourseRow*)tbe)->CourseName;
+			sql += "',";
+			sql += std::to_string(((CourseRow*)tbe)->Capacity);
+			sql += ",";
+			sql += std::to_string(((CourseRow*)tbe)->TeacherID);
+			sql += ")";
+		}
+		else if (tbe->TableName == "classroom")
+		{
+			sql += "(";
+			sql += std::to_string(((ClassroomRow*)tbe)->ClassroomID);
+			sql += ",";
+			sql += std::to_string(((ClassroomRow*)tbe)->Capacity);
+			sql += ",'";
+			sql += ((ClassroomRow*)tbe)->Type;
+			sql += "')";
+		}
+		else {
+			std::cout<<"empty tablename"<<std::endl;
+			return;
+		}
+		//delete(tbe);
+		std::cout << sql << std::endl;
 		if (mysql_query(&mysql, sql.c_str()))
 			std::cout << "添加失败："<< mysql_error(&mysql) << std::endl;
 		else
@@ -79,7 +149,7 @@ public:
 				printResult(res, mysql_num_fields(res));
 		}
 	}
-	static void ReArrangement(MYSQL mysql) {
+	static void ReArrangement(MYSQL mysql) {//重新安排课程时间表
 		if (mysql_query(&mysql, "delete from schedule"))//清空课程安排
 		{
 			std::cout << "删除失败：" << mysql_error(&mysql) << std::endl;

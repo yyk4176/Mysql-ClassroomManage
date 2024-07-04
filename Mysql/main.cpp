@@ -47,7 +47,8 @@ int main(int argc, char* argv[])
 
 	/*Teacher t1("1", "张三", "教授");
 	t1.TSearchEmptyClassroom(mysql);*/
-	Manager::ReArrangement(mysql);
+	Manager::MADD(mysql);
+
 
 	// 释放结果集
 	mysql_free_result(res);
