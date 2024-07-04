@@ -9,6 +9,53 @@
 void printResult(MYSQL_RES* res, int rownum);
 class Manager {
 public:
+	static void ManagerAct(MYSQL mysql) {
+		std::string input;
+		while (1)
+		{
+			std::cout << "1.添加数据" << std::endl;
+			std::cout << "2.删除数据" << std::endl;
+			std::cout << "3.SQL查询" << std::endl;
+			std::cout << "4.安排课程" << std::endl;
+			std::cout << "5.重新安排课程" << std::endl;
+			std::cout << "6.退出" << std::endl;
+			std::cout << "请选择操作：";
+			std::cin >> input;
+			if (input == "1")
+			{
+				MADD(mysql);
+			}
+			else if (input == "2")
+			{
+				std::string table, ID;
+				std::cout << "请输入表名：";
+				std::cin >> table;
+				std::cout << "请输入ID：";
+				std::cin >> ID;
+				MDelete(mysql, table, ID);
+			}
+			else if (input == "3")
+			{
+				MQuery(mysql);
+			}
+			else if (input == "4")
+			{
+				TableEntity* tbe = getEntity();
+				Arrangement(mysql, tbe);
+			}
+			else if (input == "5")
+			{
+				ReArrangement(mysql);
+			}
+			else if (input == "6")
+				break;
+			else
+				std::cout << "输入错误" << std::endl;
+		}
+	}
+	static void showTable(MYSQL mysql) {
+
+	}
 	static TableEntity* getEntity() {
 		std::string table;
 		std::cout<< "请输入表名：";
@@ -60,7 +107,7 @@ public:
 			return nullptr;
 		}
 	}
-	static void MADD(MYSQL mysql) {
+	static TableEntity* MADD(MYSQL mysql) {//添加数据
 		std::string sql = "insert into ";
 		std::string tablename;
 
@@ -106,14 +153,17 @@ public:
 			std::cout<<"empty tablename"<<std::endl;
 			return;
 		}
-		//delete(tbe);
-		std::cout << sql << std::endl;
+		//std::cout << sql << std::endl;
 		if (mysql_query(&mysql, sql.c_str()))
 			std::cout << "添加失败："<< mysql_error(&mysql) << std::endl;
 		else
 			std::cout << "添加成功" << std::endl;
+		if (tbe->TableName == "course")
+			return tbe;
+		else
+			delete(tbe);
 	}
-	static void MDelete(MYSQL mysql, std::string table, std::string ID) {
+	static void MDelete(MYSQL mysql, std::string table, std::string ID) {//删除数据
 		MYSQL_RES* res = nullptr;
 		MYSQL_FIELD* field = nullptr;
 		std::string input;
@@ -130,7 +180,7 @@ public:
 		else
 			std::cout << "删除成功" << std::endl;
 	}
-	static void MQuery(MYSQL mysql) {
+	static void MQuery(MYSQL mysql) {//查询数据
 		MYSQL_RES* res = nullptr;
 		std::string sql;
 		std::cout<<"输入SQL语句：";
@@ -148,6 +198,91 @@ public:
 			if (res != nullptr)
 				printResult(res, mysql_num_fields(res));
 		}
+	}
+	static void Arrangement(MYSQL mysql, TableEntity* tbe) {//安排一节课程时间
+		CourseRow* course = (CourseRow*)tbe;
+		vector<ClassroomRow> classrooms;
+		vector<ScheduleRow> schedules;
+		std::string starttime[4] = { "08:00:00", "09:55:00", "13:30:00", "15:05:00" };
+		std::string endtime[4] = { "09:35:00", "11:30:00", "15:05:00", "17:00:00" };
+
+		MYSQL_RES* res = nullptr;
+		MYSQL_FIELD* field = nullptr;
+		MYSQL_ROW row;
+		mysql_query(&mysql, "set names GBK");
+		mysql_query(&mysql, "select * from classroom");
+		res = mysql_store_result(&mysql);
+		while (row = mysql_fetch_row(res))//获取教室信息
+			classrooms.push_back(ClassroomRow(atoi(row[0]), atoi(row[1]), std::string(row[2])));
+		std::sort(classrooms.begin(), classrooms.end(), &ClassroomRow::compare);//按教室容量排序
+
+		for (int j = 0; j < classrooms.size(); j++)
+		{
+			if (course->Capacity == classrooms[j].Capacity)//对大小合适的教室安排课程
+			{
+				for (int day = 0; day < 5; day++)//一周5天
+				{
+					for (int time = 0; time < 4; time++) {//每天4个时间段
+						if (classrooms[j].sparetime[day][time] == 0)//空闲时间段
+						{
+							classrooms[j].sparetime[day][time] = 1;
+							course->flag = 1;
+							schedules.push_back(ScheduleRow(schedules.size() + 1, classrooms[j].ClassroomID, course->CourseID,
+								"2024-07-0" + std::to_string(day + 1) + " " + starttime[time], "2024-07-0" + std::to_string(day + 1) + " " + endtime[time]));
+							break;
+						}
+					}
+					if (course->flag == 1)
+						break;
+				}
+				if (course->flag == 1)
+					break;
+			}
+			else if (course->Capacity < classrooms[j].Capacity)//再安排课程容量小于教室容量的课程
+			{
+				for (int day = 0; day < 5; day++)
+				{
+					for (int time = 0; time < 4; time++) {
+						if (classrooms[j].sparetime[day][time] == 0)
+						{
+							classrooms[j].sparetime[day][time] = 1;
+							course->flag = 1;
+							schedules.push_back(ScheduleRow(schedules.size() + 1, classrooms[j].ClassroomID, course->CourseID,
+								"2024-07-0" + std::to_string(day + 1) + " " + starttime[time], "2024-07-0" + std::to_string(day + 1) + " " + endtime[time]));
+							break;
+						}
+					}
+					if (course->flag == 1)
+						break;
+				}
+				if (course->flag == 1)
+					break;
+			}
+		}
+		if (course->flag == 0)
+		{
+			std::cout << "课程" << course->CourseName << "没有合适的教室" << std::endl;
+			return;
+		}
+		std::string sql = "insert into schedule values(";
+		sql += std::to_string(schedules[0].ScheduleID);
+		sql += ",";
+		sql += std::to_string(schedules[0].ClassroomID);
+		sql += ",";
+		sql += std::to_string(schedules[0].CourseID);
+		sql += ",'";
+		sql += schedules[0].StartTime;
+		sql += "','";
+		sql += schedules[0].EndTime;
+		sql += "')";
+		if (mysql_query(&mysql, sql.c_str()))
+		{
+			std::cout << "添加失败：" << mysql_error(&mysql) << std::endl;
+			return;
+		}
+		else
+			std::cout << "添加成功" << std::endl;
+
 	}
 	static void ReArrangement(MYSQL mysql) {//重新安排课程时间表
 		if (mysql_query(&mysql, "delete from schedule"))//清空课程安排
