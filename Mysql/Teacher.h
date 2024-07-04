@@ -36,7 +36,7 @@ public:
 		else
 		{
 			std::cout << "²éÑ¯³É¹¦" << std::endl;
-			MYSQL_RES* res = mysql_store_result(&mysql);
+		MYSQL_RES* res = mysql_store_result(&mysql);
 			printResult(res, mysql_num_fields(res));
 		}
 	}
