@@ -32,6 +32,7 @@ void printResult(MYSQL_RES* res, int rownum)
 		cout << endl;
 	}
 }
+
 int main(int argc, char* argv[])
 {
 	MYSQL mysql;
@@ -45,9 +46,45 @@ int main(int argc, char* argv[])
 	MYSQL_RES* res = nullptr;
 	MYSQL_ROW row;
 
-	/*Teacher t1("1", "张三", "教授");
-	t1.TSearchEmptyClassroom(mysql);*/
-	Manager::MADD(mysql);
+	string uid, password;
+	while (1)
+	{
+		cout << "请输入ID：";
+		cin >> uid;
+		cout << "请输入密码：";
+		cin >> password;
+
+		if (uid == "manager" && password == "root")
+		{
+			cout << "管理员登录成功" << endl;
+
+			break;
+		}
+		else if (uid == "manager" && password != "root")
+		{
+			cout << "登录失败" << endl;
+			continue;
+		}
+		mysql_query(&mysql, "set names GBK");
+		string selectuser = "select * from teacher where TeacherID = " + uid;
+		mysql_query(&mysql, selectuser.c_str());
+		res = mysql_store_result(&mysql);
+		if(res != nullptr)
+		{
+			row = mysql_fetch_row(res);
+			if (row != nullptr)
+			{
+				cout << "教师登录成功" << endl;
+				Teacher* t = Teacher::loadinfo(mysql, uid);
+				t->TeacherAct(mysql);
+				break;
+			}
+			cout << "登录失败" << endl;
+
+		}
+		else
+			cout << "登录失败" << endl;
+	}
 
 
 	// 释放结果集

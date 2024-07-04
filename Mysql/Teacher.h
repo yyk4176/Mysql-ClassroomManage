@@ -18,9 +18,23 @@ private:
 	std::string name;
 	std::string title;
 public:
-	void TeacherInfo(MYSQL mysql) {
+	static Teacher* loadinfo(MYSQL mysql, std::string tid) {
+		std::string sql = "select * from teacher where TeacherId = " + tid;
+		mysql_query(&mysql, "set names GBK");
+		mysql_query(&mysql, sql.c_str());
+		MYSQL_RES* res = mysql_store_result(&mysql);
+		if (res == nullptr)
+		{
+			cout<<"没有数据！"<<endl;
+			return nullptr;
+		}
+		MYSQL_ROW row = mysql_fetch_row(res);
+		Teacher* t = new Teacher(row[0], row[1], row[2]);
+		return t;
+	}
+	void TeacherInfo(MYSQL mysql) {//查询个人信息
 		MYSQL_RES* res = nullptr;
-		std::string sql = "select * from teacher\n where TeacherID=";
+		std::string sql = "select * from teacher where TeacherID=";
 		sql+= id;
 		mysql_query(&mysql, "set names GBK");
 		mysql_query(&mysql, sql.c_str());
@@ -46,5 +60,39 @@ public:
 		mysql_query(&mysql, sql.c_str());
 		MYSQL_RES* res = mysql_store_result(&mysql);
 		printResult(res, mysql_num_fields(res));
+	}
+	void TeacherAct(MYSQL mysql)//教师操作
+	{
+		std::string sql;
+		while (1)
+		{
+			std::cout << "1.查询个人信息" << std::endl;
+			std::cout << "2.查询课程信息" << std::endl;
+			std::cout << "3.查询空教室" << std::endl;
+			std::cout << "4.退出" << std::endl;
+			std::cout << "请选择操作：";
+			int choice;
+			std::cin >> choice;
+			switch (choice)
+			{
+			case 1:
+				TeacherInfo(mysql);
+				break;
+			case 2:
+				TSearchCourseInfo(mysql);
+				break;
+			case 3:
+				TSearchEmptyClassroom(mysql);
+				break;
+			case 4:
+				return;
+			default:
+				std::cout << "输入错误，请重新输入" << std::endl;
+				break;
+			}
+		}
+	}
+	{
+
 	}
 };
