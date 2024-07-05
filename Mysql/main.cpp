@@ -86,14 +86,11 @@ int main(int argc, char* argv[])
 			cout << "登录失败" << endl;
 	}
 
-
 	// 释放结果集
 	mysql_free_result(res);
 
 	// 关闭数据库连接
 	mysql_close(&mysql);
-
-	system("pause");
 
 	return 0;
 }

@@ -5,11 +5,6 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-struct TableEntity;
-struct TeacherRow;
-struct CourseRow;
-struct ClassroomRow;
-struct ScheduleRow;
 
 void printResult(MYSQL_RES* res, int rownum);
 class Manager {
@@ -21,9 +16,10 @@ public:
 			std::cout << "1.添加数据" << std::endl;
 			std::cout << "2.删除数据" << std::endl;
 			std::cout << "3.查询数据" << std::endl;
-			std::cout << "4.高级SQL查询" << std::endl;
-			std::cout << "5.重新安排课程" << std::endl;
-			std::cout << "6.退出" << std::endl;
+			std::cout << "4.修改数据" << std::endl;
+			std::cout << "5.高级SQL查询" << std::endl;
+			std::cout << "6.重新安排课程" << std::endl;
+			std::cout << "7.退出" << std::endl;
 			std::cout << "请选择操作：";
 			std::cin >> input;
 			if (input == "1")
@@ -40,26 +36,25 @@ public:
 			}
 			else if (input == "2")
 			{
-				std::string table, ID;
-				std::cout << "请输入表名：";
-				std::cin >> table;
-				std::cout << "请输入ID：";
-				std::cin >> ID;
-				MDelete(mysql, table, ID);
+				MDelete(mysql);
 			}
 			else if (input == "3")
 			{
 				MSearch(mysql);
 			}
-			else if (input == "4")
+			else if(input == "4")
 			{
-				MQuery(mysql);
+				MAlter(mysql);
 			}
 			else if (input == "5")
 			{
-				ReArrangement(mysql);
+				MQuery(mysql);
 			}
 			else if (input == "6")
+			{
+				ReArrangement(mysql);
+			}
+			else if (input == "7")
 				break;
 			else
 				std::cout << "输入错误" << std::endl;
@@ -67,7 +62,246 @@ public:
 	}
 
 private:
-	static void MSearch(MYSQL mysql) {
+	static void MAlter(MYSQL mysql)
+	{
+		std::vector<TableEntity*>* table = MSearch(mysql);
+		std::string tablename = (*table)[0]->TableName;
+		if (table->size() == 1)
+		{
+			if (tablename == "teacher")
+			{
+				std::string input;
+				std::cout << "1.修改教师姓名" << std::endl;
+				std::cout << "2.修改教师职称" << std::endl;
+				std::cout << "3.退出" << std::endl;
+				std::cout << "请选择操作：";
+				std::cin >> input;
+				if (input == "1")
+				{
+					std::string name;
+					std::cout << "请输入新的教师姓名：";
+					std::cin >> name;
+					std::string sql = "update teacher set Name='";
+					sql += name;
+					sql += "' where TeacherID=";
+					sql += std::to_string(((TeacherRow*)(*table)[0])->TeacherID);
+					if (mysql_query(&mysql, sql.c_str()))
+						std::cout << "修改失败：" << mysql_error(&mysql) << std::endl;
+					else
+						std::cout << "修改成功" << std::endl;
+				}
+				else if (input == "2")
+				{
+					std::string title;
+					std::cout << "请输入新的教师职称：";
+					std::cin >> title;
+					std::string sql = "update teacher set Title='";
+					sql += title;
+					sql += "' where TeacherID=";
+					sql += std::to_string(((TeacherRow*)(*table)[0])->TeacherID);
+					if (mysql_query(&mysql, sql.c_str()))
+						std::cout << "修改失败：" << mysql_error(&mysql) << std::endl;
+					else
+						std::cout << "修改成功" << std::endl;
+				}
+				else if (input == "3")
+					return;
+				else
+					std::cout << "输入错误" << std::endl;
+			}
+			else if (tablename == "course")
+			{
+				std::string input;
+				std::cout << "1.修改课程名称" << std::endl;
+				std::cout << "2.修改课程容量" << std::endl;
+				std::cout << "3.修改教师ID" << std::endl;
+				std::cout << "4.退出" << std::endl;
+				std::cout << "请选择操作：";
+				std::cin >> input;
+				if (input == "1")
+				{
+					std::string name;
+					std::cout << "请输入新的课程名称：";
+					std::cin >> name;
+					std::string sql = "update course set CourseName='";
+					sql += name;
+					sql += "' where CourseID=";
+					sql += std::to_string(((CourseRow*)(*table)[0])->CourseID);
+					if (mysql_query(&mysql, sql.c_str()))
+						std::cout << "修改失败：" << mysql_error(&mysql) << std::endl;
+					else
+						std::cout << "修改成功" << std::endl;
+				}
+				else if (input == "2")
+				{
+					std::string capacity;
+					std::cout << "请输入新的课程容量：";
+					std::cin >> capacity;
+					std::string sql = "update course set Capacity=";
+					sql += capacity;
+					sql += " where CourseID=";
+					sql += std::to_string(((CourseRow*)(*table)[0])->CourseID);
+					if (mysql_query(&mysql, sql.c_str()))
+						std::cout << "修改失败：" << mysql_error(&mysql) << std::endl;
+					else
+						std::cout << "修改成功" << std::endl;
+				}
+				else if (input == "3")
+				{
+					std::string teacherid;
+					std::cout << "请输入新的教师ID：";
+					std::cin >> teacherid;
+					std::string sql = "update course set TeacherID=";
+					sql += teacherid;
+					sql += " where CourseID=";
+					sql += std::to_string(((CourseRow*)(*table)[0])->CourseID);
+					if (mysql_query(&mysql, sql.c_str()))
+						std::cout << "修改失败：" << mysql_error(&mysql) << std::endl;
+					else
+						std::cout << "修改成功" << std::endl;
+				}
+				else if (input == "4")
+					return;
+				else
+					std::cout << "输入错误" << std::endl;
+			}
+			else if (tablename == "classroom")
+			{
+				std::string input;
+				std::cout << "1.修改教室容量" << std::endl;
+				std::cout << "2.修改教室类型" << std::endl;
+				std::cout << "3.退出" << std::endl;
+				std::cout << "请选择操作：";
+				std::cin >> input;
+				if (input == "1")
+				{
+					std::string capacity;
+					std::cout << "请输入新的教室容量：";
+					std::cin >> capacity;
+					std::string sql = "update classroom set Capacity=";
+					sql += capacity;
+					sql += " where ClassroomID=";
+					sql += std::to_string(((ClassroomRow*)(*table)[0])->ClassroomID);
+					if (mysql_query(&mysql, sql.c_str()))
+						std::cout << "修改失败：" << mysql_error(&mysql) << std::endl;
+					else
+						std::cout << "修改成功" << std::endl;
+				}
+				else if (input == "2")
+				{
+					std::string type;
+					std::cout << "请输入新的教室类型：";
+					std::cin >> type;
+					std::string sql = "update classroom set Type='";
+					sql += type;
+					sql += "' where ClassroomID=";
+					sql += std::to_string(((ClassroomRow*)(*table)[0])->ClassroomID);
+					if (mysql_query(&mysql, sql.c_str()))
+						std::cout << "修改失败：" << mysql_error(&mysql) << std::endl;
+					else
+						std::cout << "修改成功" << std::endl;
+				}
+				else if (input == "3")
+					return;
+				else
+					std::cout << "输入错误" << std::endl;
+			}
+			else if (tablename == "schedule")
+			{
+				std::cout<<"1.修改教室ID\n2.修改开始时间\n3.修改结束时间\n4.退出\n请选择操作：";
+				std::string input;
+				std::cin >> input;
+				if (input == "1")
+				{
+					std::string classroomid;
+					std::cout << "请输入新的教室ID：";
+					std::cin >> classroomid;
+					std::string testsql = "SELECT a.* FROM `schedule` a, `schedule` b WHERE a.ClassroomID = b.ClassroomID AND a.StartTime = b.StartTime AND a.ClassroomID = ";
+					testsql += classroomid;
+					testsql += " AND a.starttime = '";
+					testsql += ((ScheduleRow*)(*table)[0])->StartTime;
+					testsql += "'";
+					mysql_query(&mysql, testsql.c_str());
+					MYSQL_RES* res = mysql_store_result(&mysql);
+					if (mysql_num_rows(res) > 0)
+					{
+						std::cout << "该教室已有课程安排！" << std::endl;
+						return;
+					}
+					std::string sql = "update schedule set ClassroomID=";
+					sql += classroomid;
+					sql += " where ScheduleID=";
+					sql += std::to_string(((ScheduleRow*)(*table)[0])->ScheduleID);
+					if (mysql_query(&mysql, sql.c_str()))
+						std::cout << "修改失败：" << mysql_error(&mysql) << std::endl;
+					else
+						std::cout << "修改成功" << std::endl;
+				}
+				else if (input == "2")
+				{
+					std::string starttime;
+					std::string testsql="SELECT a.* FROM `schedule` a, `schedule` b WHERE a.ClassroomID = b.ClassroomID AND a.StartTime = b.StartTime AND a.ClassroomID = ";
+					std::cout << "请输入新的开始时间：";
+					std::cin >> starttime;
+					testsql+= std::to_string(((ScheduleRow*)(*table)[0])->ClassroomID);
+					testsql+=" AND a.starttime = '";
+					testsql+=starttime;
+					testsql+="'";
+					mysql_query(&mysql, testsql.c_str());
+					MYSQL_RES* res = mysql_store_result(&mysql);
+					if (mysql_num_rows(res) > 0)
+					{
+						std::cout << "该时间该教室已有课程安排！" << std::endl;
+						return;
+					}
+					std::string sql = "update schedule set StartTime='";
+					sql += starttime;
+					sql += "' where ScheduleID=";
+					sql += std::to_string(((ScheduleRow*)(*table)[0])->ScheduleID);
+					if (mysql_query(&mysql, sql.c_str()))
+						std::cout << "修改失败：" << mysql_error(&mysql) << std::endl;
+					else
+						std::cout << "修改成功" << std::endl;
+				}
+				else if (input == "3")
+				{
+					std::string endtime;
+					std::string testsql = "SELECT a.* FROM `schedule` a, `schedule` b WHERE a.ClassroomID = b.ClassroomID AND a.StartTime = b.StartTime AND a.ClassroomID = ";
+					std::cout << "请输入新的结束时间：";
+					std::cin >> endtime;
+					testsql += std::to_string(((ScheduleRow*)(*table)[0])->ClassroomID);
+					testsql += " AND a.endtime = '";
+					testsql += endtime;
+					testsql += "'";
+					mysql_query(&mysql, testsql.c_str());
+					MYSQL_RES* res = mysql_store_result(&mysql);
+					if (mysql_num_rows(res) > 0)
+					{
+						std::cout << "该时间该教室已有课程安排！" << std::endl;
+						return;
+					}
+					std::string sql = "update schedule set EndTime='";
+					sql += endtime;
+					sql += "' where ScheduleID=";
+					sql += std::to_string(((ScheduleRow*)(*table)[0])->ScheduleID);
+					if (mysql_query(&mysql, sql.c_str()))
+						std::cout << "修改失败：" << mysql_error(&mysql) << std::endl;
+					else
+						std::cout << "修改成功" << std::endl;
+				}
+				else if (input == "4")
+					return;
+				else
+					std::cout << "输入错误" << std::endl;
+			}
+			else
+			{
+				std::cout << "输入错误" << std::endl;
+			}
+		}
+	}
+
+	static std::vector<TableEntity*>* MSearch(MYSQL mysql) {
 		std::string input;
 		MYSQL_RES* res = nullptr;
 		MYSQL_ROW row;
@@ -93,13 +327,13 @@ private:
 					if (input == "y")
 						break;
 					else if (input == "n")
-						return;
+						return new std::vector<TableEntity*>(teacher);
 					else
 						continue;
 				}
 				while (1)
 				{
-					std::cout<<"1.TeacherID\n2.TeacherName\n3.TeacherTitle\n4.退出\n请选择查询方式：";
+					std::cout<<"1.TeacherID\n2.TeacherName\n3.TeacherTitle\n4.确定并退出\n请选择查询方式：";
 					std::cin >> input;
 					if (input == "1")
 					{
@@ -132,7 +366,7 @@ private:
 						}
 					}
 					else if (input == "4")
-						break;
+						return new std::vector<TableEntity*>(teacher);
 					else
 					{
 						std::cout << "输入错误" << std::endl;
@@ -160,13 +394,13 @@ private:
 					if (input == "y")
 						break;
 					else if (input == "n")
-						return;
+						return new std::vector<TableEntity*>(course);
 					else
 						continue;
 				}
 				while (1)
 				{
-					std::cout << "1.CourseID\n2.CourseName\n3.Capacity\n4.TeacherID\n5.退出\n请选择查询方式：";
+					std::cout << "1.CourseID\n2.CourseName\n3.Capacity\n4.TeacherID\n5.确定并退出\n请选择查询方式：";
 					std::cin >> input;
 					if (input == "1")
 					{
@@ -209,7 +443,7 @@ private:
 						}
 					}
 					else if (input == "5")
-						break;
+						return new std::vector<TableEntity*>(course);
 					else
 					{
 						std::cout << "输入错误" << std::endl;
@@ -219,8 +453,8 @@ private:
 						break;
 					course.assign(result.begin(), result.end());
 					result.clear();
-					break;
 				}
+				break;
 			}
 			else if (input == "3")
 			{
@@ -238,13 +472,13 @@ private:
 					if (input == "y")
 						break;
 					else if (input == "n")
-						return;
+						return new std::vector<TableEntity*>(classroom);
 					else
 						continue;
 				}
 				while (1)
 				{
-					std::cout << "1.ClassroomID\n2.Capacity\n3.Type\n4.退出\n请选择查询方式：";
+					std::cout << "1.ClassroomID\n2.Capacity\n3.Type\n4.确定并退出\n请选择查询方式：";
 					std::cin >> input;
 					if (input == "1")
 					{
@@ -277,7 +511,7 @@ private:
 						}
 					}
 					else if (input == "4")
-						break;
+						return new std::vector<TableEntity*>(classroom);
 					else
 					{
 						std::cout << "输入错误" << std::endl;
@@ -306,13 +540,13 @@ private:
 					if (input == "y")
 						break;
 					else if (input == "n")
-						return;
+						return new std::vector<TableEntity*>(schedule);
 					else
 						continue;
 				}
 				while (1)
 				{
-					std::cout << "1.ScheduleID\n2.ClassroomID\n3.CourseID\n4.StartTime\n5.EndTime\n6.退出\n请选择查询方式：";
+					std::cout << "1.ScheduleID\n2.ClassroomID\n3.CourseID\n4.StartTime\n5.EndTime\n6.确定并退出\n请选择查询方式：";
 					std::cin >> input;
 					if (input == "1")
 					{
@@ -365,7 +599,7 @@ private:
 						}
 					}
 					else if (input == "6")
-						break;
+						return new std::vector<TableEntity*>(schedule);
 					else
 					{
 						std::cout << "输入错误" << std::endl;
@@ -384,6 +618,7 @@ private:
 				continue;
 			}
 		}
+		return nullptr;
 	}
 
 	static int showTable(std::vector<TableEntity*> table, std::string tablename) {
@@ -391,6 +626,27 @@ private:
 		if (table.size() == 0)
 		{
 			std::cout << "没有数据！" << std::endl;
+			return 0;
+		}
+		if (tablename == "teacher")
+		{
+			std::cout<<std::setw(5)<<"ID"<<std::setw(7)<<"Name"<<std::setw(7)<<"Title"<<std::endl;
+		}
+		else if(tablename=="course")
+		{
+			std::cout << std::setw(5) << "ID" << std::setw(20) << "Name" << std::setw(10) << "Capacity" << std::setw(10) << "TeacherID" << std::endl;
+		}
+		else if (tablename == "classroom")
+		{
+			std::cout << std::setw(5) << "ID" << std::setw(10) << "Capacity" << std::setw(10) << "Type" << std::endl;
+		}
+		else if (tablename == "schedule")
+		{
+			std::cout << std::setw(3) << "ID" << std::setw(12) << "ClassroomID" << std::setw(10) << "CourseID" << std::setw(20) << "StartTime" << std::setw(20) << "EndTime" << std::endl;
+		}
+		else
+		{
+			std::cout << "表名错误" << std::endl;
 			return 0;
 		}
 		for (auto row : table)
@@ -524,22 +780,33 @@ private:
 		return nullptr;
 	}
 
-	static void MDelete(MYSQL mysql, std::string table, std::string ID) {//删除数据
+	static void MDelete(MYSQL mysql) {//删除数据
+		
+		std::vector<TableEntity*>* table = MSearch(mysql);
+
 		MYSQL_RES* res = nullptr;
 		MYSQL_FIELD* field = nullptr;
 		std::string input;
-		std::string sql = "delete from ";
-		sql += table;
-		sql += " where ";
-		sql += table;
-		sql += "ID";
-		sql += " = ";
-		sql += ID;
-		//std::cout << sql;
-		if (mysql_query(&mysql, sql.c_str()))
-			std::cout << "删除失败：" << mysql_error(&mysql) << std::endl;
-		else
-			std::cout << "删除成功" << std::endl;
+		showTable(*table, (*table)[0]->TableName);
+		std::cout << "是否删除以上数据？(y/n)：";
+		std::cin >> input;
+		if (input == "y")
+		{
+			for (auto tbe : *table)
+			{
+				std::string sql = "delete from ";
+				sql += tbe->TableName;
+				sql += " where ";
+				sql += tbe->TableName;
+				sql += "ID";
+				sql += " = ";
+				sql += std::to_string(tbe->getID());
+				if (mysql_query(&mysql, sql.c_str()))
+					std::cout << "删除失败：" << mysql_error(&mysql) << std::endl;
+
+			}
+		}
+		
 	}
 
 	static void MQuery(MYSQL mysql) {//查询数据
