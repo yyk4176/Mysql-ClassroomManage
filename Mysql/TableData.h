@@ -1,13 +1,16 @@
 #pragma once
 #include <string>
+#include <iomanip>	
 
 struct TableEntity {
 public:
 	std::string TableName;
 	int rownum;
+	virtual void printrow() = 0;
 };
 
 struct TeacherRow :public TableEntity {
+public:
 	int TeacherID;
 	std::string Name;
 	std::string Title;
@@ -18,6 +21,9 @@ struct TeacherRow :public TableEntity {
 		this->Name = Name;
 		this->Title = Title;
 		rownum = 3;
+	}
+	void printrow() override {
+		std::cout << std::setw(5) << TeacherID << std::setw(7) << Name << std::setw(7) << Title << std::endl;
 	}
 };
 
@@ -35,6 +41,10 @@ struct CourseRow :public TableEntity {
 		this->Capacity = Capacity;
 		this->TeacherID = TeacherID;
 		rownum = 4;
+		flag = 0;
+	}
+	void printrow() override {
+		std::cout << std::setw(5) << CourseID << std::setw(20) << CourseName << std::setw(5) << Capacity << std::setw(5) << TeacherID << std::endl;
 	}
 };
 
@@ -54,6 +64,9 @@ struct ClassroomRow :public TableEntity {
 		this->Type = Type;
 		rownum = 3;
 	}
+	void printrow() override {
+		std::cout << std::setw(5) << ClassroomID << std::setw(5) << Capacity << std::setw(7) << Type << std::endl;
+	}
 };
 
 struct ScheduleRow :public TableEntity {
@@ -71,5 +84,8 @@ struct ScheduleRow :public TableEntity {
 		this->StartTime = StartTime;
 		this->EndTime = EndTime;
 		rownum = 5;
+	}
+	void printrow() override{
+		std::cout << std::setw(3) << ScheduleID << std::setw(5) << ClassroomID << std::setw(6) << CourseID << std::setw(20) << StartTime << std::setw(20) << EndTime << std::endl;
 	}
 };

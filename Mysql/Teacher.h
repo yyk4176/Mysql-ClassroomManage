@@ -13,10 +13,12 @@ public:
 		this->title = title;
 	}
 	~Teacher() {}
+
 private:
 	std::string id;
 	std::string name;
 	std::string title;
+
 public:
 	static Teacher* loadinfo(MYSQL mysql, std::string tid) {
 		std::string sql = "select * from teacher where TeacherId = " + tid;
@@ -25,13 +27,14 @@ public:
 		MYSQL_RES* res = mysql_store_result(&mysql);
 		if (res == nullptr)
 		{
-			cout<<"没有数据！"<<endl;
+			std::cout<<"没有数据！"<<std::endl;
 			return nullptr;
 		}
 		MYSQL_ROW row = mysql_fetch_row(res);
 		Teacher* t = new Teacher(row[0], row[1], row[2]);
 		return t;
 	}
+
 	void TeacherInfo(MYSQL mysql) {//查询个人信息
 		MYSQL_RES* res = nullptr;
 		std::string sql = "select * from teacher where TeacherID=";
@@ -41,6 +44,7 @@ public:
 		res = mysql_store_result(&mysql);
 		printResult(res,teacherrows);
 	}
+
 	void TSearchCourseInfo(MYSQL mysql) {//查询课程信息
 		std::string sql = "SELECT c.CourseID,c.CourseName,cl.ClassroomID,cl.Capacity,cl.Type,StartTime,EndTime FROM teacher t,course c,`schedule` s,classroom cl WHERE t.TeacherID=c.TeacherID AND s.CourseID=c.CourseID AND cl.ClassroomID=s.ClassroomID AND t.TeacherID=";
 		sql+= id;
@@ -54,6 +58,7 @@ public:
 			printResult(res, mysql_num_fields(res));
 		}
 	}
+
 	void TSearchEmptyClassroom(MYSQL mysql) {//查询空教室
 		std::string sql = "SELECT ClassroomID FROM classroom WHERE NOT EXISTS (SELECT * FROM `schedule` WHERE classroom.ClassroomID=`schedule`.ClassroomID AND NOW() BETWEEN StartTime AND EndTime)";
 		mysql_query(&mysql, "set names GBK");
@@ -61,6 +66,7 @@ public:
 		MYSQL_RES* res = mysql_store_result(&mysql);
 		printResult(res, mysql_num_fields(res));
 	}
+
 	void TeacherAct(MYSQL mysql)//教师操作
 	{
 		std::string sql;

@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
 		if (uid == "manager" && password == "root")
 		{
 			cout << "管理员登录成功" << endl;
-
+			Manager::ManagerAct(mysql);
 			break;
 		}
 		else if (uid == "manager" && password != "root")

@@ -5,6 +5,11 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+struct TableEntity;
+struct TeacherRow;
+struct CourseRow;
+struct ClassroomRow;
+struct ScheduleRow;
 
 void printResult(MYSQL_RES* res, int rownum);
 class Manager {
@@ -15,15 +20,23 @@ public:
 		{
 			std::cout << "1.添加数据" << std::endl;
 			std::cout << "2.删除数据" << std::endl;
-			std::cout << "3.SQL查询" << std::endl;
-			std::cout << "4.安排课程" << std::endl;
+			std::cout << "3.查询数据" << std::endl;
+			std::cout << "4.高级SQL查询" << std::endl;
 			std::cout << "5.重新安排课程" << std::endl;
 			std::cout << "6.退出" << std::endl;
 			std::cout << "请选择操作：";
 			std::cin >> input;
 			if (input == "1")
 			{
-				MADD(mysql);
+				TableEntity* tbe = MADD(mysql);
+				if (tbe != nullptr)
+				{
+					std::string input;
+					std::cout << "检测到新增课程，是否为其安排教室？(y/n)：";
+					std::cin >> input;
+					if (input == "y") 
+						Arrangement(mysql, tbe);
+				}
 			}
 			else if (input == "2")
 			{
@@ -36,12 +49,11 @@ public:
 			}
 			else if (input == "3")
 			{
-				MQuery(mysql);
+				MSearch(mysql);
 			}
 			else if (input == "4")
 			{
-				TableEntity* tbe = getEntity();
-				Arrangement(mysql, tbe);
+				MQuery(mysql);
 			}
 			else if (input == "5")
 			{
@@ -53,9 +65,342 @@ public:
 				std::cout << "输入错误" << std::endl;
 		}
 	}
-	static void showTable(MYSQL mysql) {
 
+private:
+	static void MSearch(MYSQL mysql) {
+		std::string input;
+		MYSQL_RES* res = nullptr;
+		MYSQL_ROW row;
+		while (1)
+		{
+			std::cout << "1.teacher \n2.course \n3.classroom \n4.schedule" << std::endl;
+			std::cout << "选择待查询的表：";
+			std::cin >> input;
+			mysql_query(&mysql, "set names GBK");
+			if (input == "1")
+			{
+				std::vector<TableEntity*> teacher;
+				std::vector<TableEntity*> result;
+				mysql_query(&mysql, "select * from teacher");
+				res = mysql_store_result(&mysql);
+				while (row = mysql_fetch_row(res))
+					teacher.push_back(new TeacherRow(atoi(row[0]), std::string(row[1]), std::string(row[2])));
+				showTable(teacher, "teacher");
+				while (1)
+				{
+					std::cout<<"是否继续查询？(y/n)：";
+					std::cin >> input;
+					if (input == "y")
+						break;
+					else if (input == "n")
+						return;
+					else
+						continue;
+				}
+				while (1)
+				{
+					std::cout<<"1.TeacherID\n2.TeacherName\n3.TeacherTitle\n4.退出\n请选择查询方式：";
+					std::cin >> input;
+					if (input == "1")
+					{
+						std::cout<<"请输入教师ID：";
+						std::cin >> input;
+						for(auto t : teacher)
+						{
+							if (((TeacherRow*)t)->TeacherID == atoi(input.c_str()))
+								result.push_back(t);
+						}
+					}
+					else if (input == "2")
+					{
+						std::cout << "请输入教师姓名：";
+						std::cin >> input;
+						for (auto t : teacher)
+						{
+							if (((TeacherRow*)t)->Name == input)
+								result.push_back(t);
+						}
+					}
+					else if (input == "3")
+					{
+						std::cout << "请输入教师职称：";
+						std::cin >> input;
+						for (auto t : teacher)
+						{
+							if (((TeacherRow*)t)->Title == input)
+								result.push_back(t);
+						}
+					}
+					else if (input == "4")
+						break;
+					else
+					{
+						std::cout << "输入错误" << std::endl;
+						continue;
+					}
+					if (showTable(result, "teacher") == 0)
+						break;
+					teacher.assign(result.begin(), result.end());
+					result.clear();
+				}
+				break;
+			}
+			else if (input == "2")
+			{
+				mysql_query(&mysql, "select * from course");
+				res = mysql_store_result(&mysql);
+				std::vector<TableEntity*> course;
+				std::vector<TableEntity*> result;
+				while (row = mysql_fetch_row(res))
+					course.push_back(new CourseRow(atoi(row[0]), std::string(row[1]), atoi(row[2]), atoi(row[3])));
+				showTable(course, "course");
+				while (1) {
+					std::cout << "是否继续查询？(y/n)：";
+					std::cin >> input;
+					if (input == "y")
+						break;
+					else if (input == "n")
+						return;
+					else
+						continue;
+				}
+				while (1)
+				{
+					std::cout << "1.CourseID\n2.CourseName\n3.Capacity\n4.TeacherID\n5.退出\n请选择查询方式：";
+					std::cin >> input;
+					if (input == "1")
+					{
+						std::cout << "请输入课程ID：";
+						std::cin >> input;
+						for (auto c : course)
+						{
+							if (((CourseRow*)c)->CourseID == atoi(input.c_str()))
+								result.push_back(c);
+						}
+					}
+					else if (input == "2")
+					{
+						std::cout << "请输入课程名称：";
+						std::cin >> input;
+						for (auto c : course)
+						{
+							if (((CourseRow*)c)->CourseName == input)
+								result.push_back(c);
+						}
+					}
+					else if (input == "3")
+					{
+						std::cout << "请输入课程容量：";
+						std::cin >> input;
+						for (auto c : course)
+						{
+							if (((CourseRow*)c)->Capacity == atoi(input.c_str()))
+								result.push_back(c);
+						}
+					}
+					else if (input == "4")
+					{
+						std::cout << "请输入教师ID：";
+						std::cin >> input;
+						for (auto c : course)
+						{
+							if (((CourseRow*)c)->TeacherID == atoi(input.c_str()))
+								result.push_back(c);
+						}
+					}
+					else if (input == "5")
+						break;
+					else
+					{
+						std::cout << "输入错误" << std::endl;
+						continue;
+					}
+					if (showTable(result, "course") == 0)
+						break;
+					course.assign(result.begin(), result.end());
+					result.clear();
+					break;
+				}
+			}
+			else if (input == "3")
+			{
+				mysql_query(&mysql, "select * from classroom");
+				res = mysql_store_result(&mysql);
+				std::vector<TableEntity*> classroom;
+				std::vector<TableEntity*> result;
+				while (row = mysql_fetch_row(res))
+					classroom.push_back(new ClassroomRow(atoi(row[0]), atoi(row[1]), std::string(row[2])));
+				showTable(classroom, "classroom");
+				while (1)
+				{
+					std::cout << "是否继续查询？(y/n)：";
+					std::cin >> input;
+					if (input == "y")
+						break;
+					else if (input == "n")
+						return;
+					else
+						continue;
+				}
+				while (1)
+				{
+					std::cout << "1.ClassroomID\n2.Capacity\n3.Type\n4.退出\n请选择查询方式：";
+					std::cin >> input;
+					if (input == "1")
+					{
+						std::cout << "请输入教室ID：";
+						std::cin >> input;
+						for (auto cl : classroom)
+						{
+							if (((ClassroomRow*)cl)->ClassroomID == atoi(input.c_str()))
+								result.push_back(cl);
+						}
+					}
+					else if (input == "2")
+					{
+						std::cout << "请输入教室容量：";
+						std::cin >> input;
+						for (auto cl : classroom)
+						{
+							if (((ClassroomRow*)cl)->Capacity == atoi(input.c_str()))
+								result.push_back(cl);
+						}
+					}
+					else if (input == "3")
+					{
+						std::cout << "请输入教室类型：";
+						std::cin >> input;
+						for (auto cl : classroom)
+						{
+							if (((ClassroomRow*)cl)->Type == input)
+								result.push_back(cl);
+						}
+					}
+					else if (input == "4")
+						break;
+					else
+					{
+						std::cout << "输入错误" << std::endl;
+						continue;
+					}
+					if (showTable(result, "classroom") == 0)
+						break;
+					classroom.assign(result.begin(), result.end());
+					result.clear();
+				}
+				break;
+			}
+			else if (input == "4")
+			{
+				mysql_query(&mysql, "select * from schedule");
+				res = mysql_store_result(&mysql);
+				std::vector<TableEntity*> schedule;
+				std::vector<TableEntity*> result;
+				while (row = mysql_fetch_row(res))
+					schedule.push_back(new ScheduleRow(atoi(row[0]), atoi(row[1]), atoi(row[2]), std::string(row[3]), std::string(row[4])));
+				showTable(schedule, "schedule");
+				while (1)
+				{
+					std::cout<<"是否继续查询？(y/n)：";
+					std::cin >> input;
+					if (input == "y")
+						break;
+					else if (input == "n")
+						return;
+					else
+						continue;
+				}
+				while (1)
+				{
+					std::cout << "1.ScheduleID\n2.ClassroomID\n3.CourseID\n4.StartTime\n5.EndTime\n6.退出\n请选择查询方式：";
+					std::cin >> input;
+					if (input == "1")
+					{
+						std::cout << "请输入课程安排ID：";
+						std::cin >> input;
+						for (auto s : schedule)
+						{
+							if (((ScheduleRow*)s)->ScheduleID == atoi(input.c_str()))
+								result.push_back(s);
+						}
+					}
+					else if (input == "2")
+					{
+						std::cout << "请输入教室ID：";
+						std::cin >> input;
+						for (auto s : schedule)
+						{
+							if (((ScheduleRow*)s)->ClassroomID == atoi(input.c_str()))
+								result.push_back(s);
+						}
+					}
+					else if (input == "3")
+					{
+						std::cout << "请输入课程ID：";
+						std::cin >> input;
+						for (auto s : schedule)
+						{
+							if (((ScheduleRow*)s)->CourseID == atoi(input.c_str()))
+								result.push_back(s);
+						}
+					}
+					else if (input == "4")
+					{
+						std::cout << "请输入开始时间：";
+						std::cin >> input;
+						for (auto s : schedule)
+						{
+							if (((ScheduleRow*)s)->StartTime == input)
+								result.push_back(s);
+						}
+					}
+					else if (input == "5")
+					{
+						std::cout << "请输入结束时间：";
+						std::cin >> input;
+						for (auto s : schedule)
+						{
+							if (((ScheduleRow*)s)->EndTime == input)
+								result.push_back(s);
+						}
+					}
+					else if (input == "6")
+						break;
+					else
+					{
+						std::cout << "输入错误" << std::endl;
+						continue;
+					}
+					if (showTable(result, "schedule") == 0)
+						break;
+					schedule.assign(result.begin(), result.end());
+					result.clear();
+				}
+				break;
+			}
+			else
+			{
+				std::cout << "输入错误" << std::endl;
+				continue;
+			}
+		}
 	}
+
+	static int showTable(std::vector<TableEntity*> table, std::string tablename) {
+		std::cout << "表名：" << tablename << std::endl;
+		if (table.size() == 0)
+		{
+			std::cout << "没有数据！" << std::endl;
+			return 0;
+		}
+		for (auto row : table)
+		{
+			row->printrow();
+		}
+		std::cout << std::endl;
+		return 1;
+	}
+
 	static TableEntity* getEntity() {
 		std::string table;
 		std::cout<< "请输入表名：";
@@ -65,6 +410,11 @@ public:
 		{
 			std::cout<<"请输入教师ID：";
 			std::cin >> temp[0];
+			if (atoi(temp[0].c_str()) == 0)
+			{
+				std::cout << "ID格式错误！" << std::endl;
+				return nullptr;
+			}
 			std::cout << "请输入教师姓名：";
 			std::cin >> temp[1];
 			std::cout << "请输入教师职称：";
@@ -82,6 +432,11 @@ public:
 			std::cin >> temp[2];
 			std::cout << "请输入教师ID：";
 			std::cin >> temp[3];
+			if (atoi(temp[0].c_str()) == 0 || atoi(temp[3].c_str()) == 0)
+			{
+				std::cout << "ID格式错误！" << std::endl;
+				return nullptr;
+			}
 			CourseRow* cr = new CourseRow(atoi(temp[0].c_str()), temp[1], atoi(temp[2].c_str()), atoi(temp[3].c_str()));
 			return cr;
 		}
@@ -93,6 +448,10 @@ public:
 			std::cin >> temp[1];
 			std::cout << "请输入教室类型：";
 			std::cin >> temp[2];
+			if (atoi(temp[0].c_str()) == 0)
+			{
+				std::cout << "ID格式错误！" << std::endl;
+			}
 			ClassroomRow* clr = new ClassroomRow(atoi(temp[0].c_str()), atoi(temp[1].c_str()), temp[2]);
 			return clr;
 		}
@@ -107,13 +466,13 @@ public:
 			return nullptr;
 		}
 	}
+
 	static TableEntity* MADD(MYSQL mysql) {//添加数据
 		std::string sql = "insert into ";
 		std::string tablename;
 
 		TableEntity* tbe = getEntity();
-		tablename = tbe->TableName;
-
+		
 		sql += tbe->TableName;
 		sql += " values";
 		mysql_query(&mysql, "set names GBK");
@@ -151,7 +510,7 @@ public:
 		}
 		else {
 			std::cout<<"empty tablename"<<std::endl;
-			return;
+			return nullptr;
 		}
 		//std::cout << sql << std::endl;
 		if (mysql_query(&mysql, sql.c_str()))
@@ -162,7 +521,9 @@ public:
 			return tbe;
 		else
 			delete(tbe);
+		return nullptr;
 	}
+
 	static void MDelete(MYSQL mysql, std::string table, std::string ID) {//删除数据
 		MYSQL_RES* res = nullptr;
 		MYSQL_FIELD* field = nullptr;
@@ -180,6 +541,7 @@ public:
 		else
 			std::cout << "删除成功" << std::endl;
 	}
+
 	static void MQuery(MYSQL mysql) {//查询数据
 		MYSQL_RES* res = nullptr;
 		std::string sql;
@@ -199,10 +561,11 @@ public:
 				printResult(res, mysql_num_fields(res));
 		}
 	}
+
 	static void Arrangement(MYSQL mysql, TableEntity* tbe) {//安排一节课程时间
 		CourseRow* course = (CourseRow*)tbe;
-		vector<ClassroomRow> classrooms;
-		vector<ScheduleRow> schedules;
+		std::vector<ClassroomRow> classrooms;
+		std::vector<ScheduleRow> schedules;
 		std::string starttime[4] = { "08:00:00", "09:55:00", "13:30:00", "15:05:00" };
 		std::string endtime[4] = { "09:35:00", "11:30:00", "15:05:00", "17:00:00" };
 
@@ -284,6 +647,7 @@ public:
 			std::cout << "添加成功" << std::endl;
 
 	}
+
 	static void ReArrangement(MYSQL mysql) {//重新安排课程时间表
 		if (mysql_query(&mysql, "delete from schedule"))//清空课程安排
 		{
